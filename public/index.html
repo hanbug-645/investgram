@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        @keyframes scramble {
+            0% { transform: scale(1) rotate(0); opacity: 1; }
+            45% { transform: scale(0.9) rotate(5deg); opacity: 0; }
+            55% { transform: scale(0.9) rotate(-5deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        .scramble-animation {
+            animation: scramble 2s ease-in-out forwards;
+        }
+        #stockView, #personalityView {
+            position: absolute;
+            width: 100%;
+            transition: opacity 0.3s ease;
+        }
+        .content-wrapper {
+            position: relative;
+            min-height: 300px;
+        }
+        .logo-text {
+            /* Apply the Pacifico font */
+            font-family: 'Pacifico', cursive;
+            /* Set a large font size */
+            font-size: 6rem; /* Adjust size as needed */
+            /* Set the text color */
+            color: #000000; /* Black text */
+            /* Add some padding */
+            padding: 20px;
+            margin-bottom: 60px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <h1 class="text-4xl font-bold text-center mb-8 logo-text">Investgram</h1>
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-200 mb-6">
+                <button id="discoveryTabBtn" onclick="switchTab('discoveryTab')" 
+                        class="py-2 px-4 text-blue-600 border-b-2 border-blue-600 font-medium">
+                    Discovery Feed
+                </button>
+                <button id="analysisTabBtn" onclick="switchTab('analysisTab')" 
+                        class="py-2 px-4 text-gray-500 hover:text-blue-600 font-medium">
+                    Find Stock
+                </button>
+            </div>
+            
+            <!-- Tab Content Container -->
+            <div id="tabContent">
+                <!-- Discovery Tab Content -->
+                <div id="discoveryTab" class="bg-white rounded-lg shadow-lg p-6">
+                    <div id="discoveryFeed" class="space-y-4">
+                        <!-- Posts will be loaded here -->
+                        <div class="text-center text-gray-500 py-4">
+                            Loading discovery feed...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analysis Tab Content -->
+                <div id="analysisTab" class="rounded-lg p-6 hidden">
+                    <div class="mb-4">
+                        <label for="stockSymbol" class="block text-gray-700 text-sm font-bold mb-2">Enter Stock Symbol:</label>
+                        <input type="text" id="stockSymbol" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="e.g., AAPL">
+                    </div>
+                    <button onclick="analyzeStock()" 
+                            class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">
+                        Who is this stock?
+                    </button>
+                    <div id="loading" class="hidden mt-4 text-center text-gray-600">
+                        Analyzing... Please wait...
+                    </div>
+                    
+                    <div class="content-wrapper">
+                        <!-- Stock Analysis View -->
+                        <div id="stockView" class="mt-4 hidden">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h3 class="text-lg font-semibold mb-4">Stock Signal</h3>
+                                <dl class="grid grid-cols-2 gap-4">
+                                    <div class="col-span-2">
+                                        <dt class="text-sm font-medium text-gray-500">Sector</dt>
+                                        <dd id="sector" class="mt-1 text-lg text-gray-900"></dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500">IPO Year</dt>
+                                        <dd id="ipo" class="mt-1 text-lg text-gray-900"></dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500">Growth</dt>
+                                        <dd id="growth" class="mt-1 text-lg text-gray-900"></dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500">Volatility</dt>
+                                        <dd id="volatility" class="mt-1 text-lg text-gray-900"></dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500">Dividend</dt>
+                                        <dd id="dividend" class="mt-1 text-lg text-gray-900"></dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <!-- Personality View -->
+                        <div id="personalityView" class="mt-4 hidden">
+                            <div class="bg-purple-50 rounded-lg p-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <!-- Left column: Traits -->
+                                    <div>
+                                        <h3 class="text-lg font-semibold mb-4 text-purple-700">Personality Analysis</h3>
+                                        <!-- Bio at the top -->
+                                        <div class="mb-4 bg-purple-100 p-3 rounded-lg">
+                                            <p id="bio" class="text-purple-900 italic"></p>
+                                        </div>
+                                        <dl class="grid grid-cols-1 gap-4">
+                                            <div>
+                                                <dt class="text-sm font-medium text-purple-500">Career</dt>
+                                                <dd id="career" class="mt-1 text-lg text-purple-900"></dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-sm font-medium text-purple-500">Age</dt>
+                                                <dd id="age" class="mt-1 text-lg text-purple-900"></dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-sm font-medium text-purple-500">Charming</dt>
+                                                <dd id="charming" class="mt-1 text-lg text-purple-900"></dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-sm font-medium text-purple-500">Masculine</dt>
+                                                <dd id="masculine" class="mt-1 text-lg text-purple-900"></dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-sm font-medium text-purple-500">Kindness</dt>
+                                                <dd id="kindness" class="mt-1 text-lg text-purple-900"></dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                    <!-- Right column: Generated Image -->
+                                    <div class="flex flex-col items-center justify-center">
+                                        <div id="imageLoading" class="hidden">
+                                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+                                            <p class="mt-2 text-purple-600">Generating portrait...</p>
+                                        </div>
+                                        <div id="imageContainer" class="hidden">
+                                            <img id="generatedImage" class="rounded-lg shadow-lg max-w-full h-auto" alt="Generated portrait">
+                                            <button id="followButton" class="mt-4 w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition-colors">
+                                                Follow
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script src="discovery.js"></script>
+    <script>
+        // Tab switching function
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.getElementById('discoveryTab').classList.add('hidden');
+            document.getElementById('analysisTab').classList.add('hidden');
+            
+            // Reset all tab buttons
+            document.getElementById('discoveryTabBtn').classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+            document.getElementById('discoveryTabBtn').classList.add('text-gray-500');
+            document.getElementById('analysisTabBtn').classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+            document.getElementById('analysisTabBtn').classList.add('text-gray-500');
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Highlight selected tab button
+            const btnId = tabId + 'Btn';
+            document.getElementById(btnId).classList.remove('text-gray-500');
+            document.getElementById(btnId).classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            
+            // Initialize discovery feed if that tab is selected
+            if (tabId === 'discoveryTab') {
+                initializeDiscoveryFeed();
+            }
+        }
+        
+        // Initialize discovery feed on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDiscoveryFeed();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Database Management</h1>
+            <button onclick="showAddModal()" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">Add New Entry</button>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Portrait URL</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">News URL</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price Change</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">News Brief</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image Desc</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image URL</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stocksTable">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Template (used for both Add and Edit) -->
+    <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
+            <h3 id="modalTitle" class="text-lg font-bold mb-4">Edit Stock Entry</h3>
+            <form id="stockForm">
+                <input type="hidden" id="editId">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Stock Symbol</label>
+                        <input type="text" id="editStock" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <input type="text" id="editName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Portrait URL</label>
+                        <input type="text" id="editPortraitUrl" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">News URL</label>
+                        <input type="url" id="editNewsUrl" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Price Change</label>
+                        <input type="number" step="0.01" id="editPriceChange" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Image URL</label>
+                        <input type="text" id="editImageUrl" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">News Brief</label>
+                        <textarea id="editNewsBrief" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">Image Description</label>
+                        <textarea id="editImageDesc" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let isEditing = false;
+
+        // Load stocks data
+        async function loadStocks() {
+            try {
+                const response = await fetch('/api/stocks');
+                const data = await response.json();
+                if (data.success) {
+                    const tableBody = document.getElementById('stocksTable');
+                    tableBody.innerHTML = data.data.map(stock => `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">${stock.id}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${new Date(stock.date).toLocaleDateString()}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${stock.stock}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${stock.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <a href="${stock.portrait_url || '#'}" target="_blank" class="text-blue-600 hover:underline">${truncateUrl(stock.portrait_url)}</a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <a href="${stock.news_url || '#'}" target="_blank" class="text-blue-600 hover:underline">${truncateUrl(stock.news_url)}</a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">${stock.price_change}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${truncateText(stock.news_brief)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">${truncateText(stock.news_image_description)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <a href="${stock.image_url || '#'}" target="_blank" class="text-blue-600 hover:underline">${truncateUrl(stock.image_url)}</a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <button onclick="editStock(${stock.id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                                <button onclick="deleteStock(${stock.id})" class="text-red-600 hover:text-red-800">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading stocks:', error);
+            }
+        }
+
+        // Helper functions
+        function truncateText(text, length = 30) {
+            if (!text) return '';
+            return text.length > length ? text.substring(0, length) + '...' : text;
+        }
+
+        function truncateUrl(url, length = 30) {
+            if (!url) return '';
+            return url.length > length ? url.substring(0, length) + '...' : url;
+        }
+
+        // Show add modal
+        function showAddModal() {
+            isEditing = false;
+            document.getElementById('modalTitle').textContent = 'Add New Stock Entry';
+            document.getElementById('editId').value = '';
+            document.getElementById('stockForm').reset();
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        // Edit stock
+        async function editStock(stockId) {
+            try {
+                const response = await fetch(`/api/stocks/${stockId}`);
+                const data = await response.json();
+                if (data.success && data.data) {
+                    const stock = data.data;
+                    isEditing = true;
+                    document.getElementById('modalTitle').textContent = 'Edit Stock Entry';
+                    document.getElementById('editId').value = stock.id;
+                    document.getElementById('editStock').value = stock.stock || '';
+                    document.getElementById('editName').value = stock.name || '';
+                    document.getElementById('editPortraitUrl').value = stock.portrait_url || '';
+                    document.getElementById('editNewsUrl').value = stock.news_url || '';
+                    document.getElementById('editPriceChange').value = stock.price_change || 0;
+                    document.getElementById('editNewsBrief').value = stock.news_brief || '';
+                    document.getElementById('editImageDesc').value = stock.news_image_description || '';
+                    document.getElementById('editImageUrl').value = stock.image_url || '';
+                    document.getElementById('modal').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching stock details:', error);
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        // Handle form submission
+        document.getElementById('stockForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const stockData = {
+                stock: document.getElementById('editStock').value,
+                name: document.getElementById('editName').value,
+                portrait_url: document.getElementById('editPortraitUrl').value,
+                news_url: document.getElementById('editNewsUrl').value,
+                price_change: parseFloat(document.getElementById('editPriceChange').value),
+                news_brief: document.getElementById('editNewsBrief').value,
+                news_image_description: document.getElementById('editImageDesc').value,
+                image_url: document.getElementById('editImageUrl').value,
+                date: new Date().toISOString()
+            };
+
+            try {
+                const url = isEditing ? `/api/stocks/${id}` : '/api/stocks';
+                const method = isEditing ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(stockData)
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    loadStocks();
+                }
+            } catch (error) {
+                console.error('Error saving stock:', error);
+            }
+        });
+
+        // Delete stock
+        async function deleteStock(id) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                try {
+                    const response = await fetch(`/api/stocks/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        loadStocks();
+                    }
+                } catch (error) {
+                    console.error('Error deleting stock:', error);
+                }
+            }
+        }
+
+        // Initial load
+        loadStocks();
+    </script>
+</body>
+</html>
